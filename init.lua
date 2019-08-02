@@ -100,7 +100,7 @@ function gtextitems.register(name, def)
 		gtextitem = gtextitems.GROUP_BLANK,
 	}, def.item.groups or {})
 
-	def.written.groups = table.combine({
+	def.written.groups = table.combine(def.item.groups, {
 		gtextitem = gtextitems.GROUP_WRITTEN,
 	}, def.written.groups or {})
 
