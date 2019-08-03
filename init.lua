@@ -15,7 +15,7 @@ if has_doc then
 		if g > 0 then
 			table.insert(ret, S"This item can be written in when used (punched with).")
 			if g == gtextitems.GROUP_WRITTEN then
-				table.insert(ret, S("It can be copied by crafting with another empty @1.", minetest.registered_nodes[def._gtextitems_def.itemname].description))
+				table.insert(ret, S("It can be copied by crafting with another empty @1.", minetest.registered_items[def._gtextitems_def.itemname].description))
 			end
 		end
 		return table.concat(ret, "\n")
@@ -122,4 +122,23 @@ function gtextitems.register(name, def)
 
 	minetest.register_craftitem(def.itemname, def.item)
 	minetest.register_craftitem(def.writtenname, table.combine(def.item, def.written))
+
+	minetest.register_craft{
+		output = def.writtenname,
+		type = "shapeless",
+		recipe = {def.itemname, def.writtenname},
+	}
+
+	minetest.register_on_craft(function(stack, player, old_grid, craft_inv)
+		if stack:get_name() ~= def.writtenname then
+			return
+		end
+
+		for i=1,craft_inv:get_size("craft") do
+			if old_grid[i]:get_name() == def.writtenname then
+				gtextitems.set_item(stack, gtextitems.get_item(old_grid[i]))
+				craft_inv:set_stack("craft", i, old_grid[i])
+			end
+		end
+	end)
 end
