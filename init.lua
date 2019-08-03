@@ -94,6 +94,28 @@ function gtextitems.get_item(stack)
 	return table.combine(default, (#d > 0) and minetest.deserialize(d) or {})
 end
 
+function gtextitems.set_node(pos, data)
+	local nn = minetest.get_node(pos).name
+	if minetest.get_item_group(nn, "gtextitem") ~= gtextitems.GROUP_WRITTEN then
+		minetest.log("warning", ("Tried to gtextitems.set_node invalid node (%s) at (%s)."):format(nn, minetest.pos_to_string(pos)))
+		return
+	end
+
+	-- Construct "fake" stack.
+	local stack = gtextitems.set_item(ItemStack(nn), data)
+
+	local meta = minetest.get_meta(pos)
+	meta:set_string("gtextitem", stack:get_meta():get_string("gtextitem"))
+	meta:set_string("infotext", stack:get_meta():get_string("description"))
+
+	local gtm = gtextitems.get_item(stack)
+	meta:set_string("formspec", "size[8,8]"
+		.. "real_coordinates[true]"
+		.. ("label[0.1,0.35;%s]"):format(F(gtm.title))
+		.. ("textarea[0.1,1.2;7.8,6.7;;;%s]"):format(F(gtm.text))
+	)
+end
+
 local function register_node(name, def)
 	local def = table.combine(def, {
 		preserve_metadata = function(pos, oldnode, oldmeta, drops)
@@ -110,17 +132,7 @@ local function register_node(name, def)
 			if minetest.get_item_group(stack:get_name(), "gtextitem") == gtextitems.GROUP_BLANK then
 				return
 			end
-			local meta = minetest.get_meta(pos)
-
-			meta:set_string("gtextitem", stack:get_meta():get_string("gtextitem"))
-			meta:set_string("infotext", stack:get_meta():get_string("description"))
-
-			local gtm = gtextitems.get_item(stack)
-			meta:set_string("formspec", "size[8,8]"
-				.. "real_coordinates[true]"
-				.. ("label[0.1,0.35;%s]"):format(F(gtm.title))
-				.. ("textarea[0.1,1.2;7.8,6.7;;;%s]"):format(F(gtm.text))
-			)
+			gtextitems.set_node(pos, gtextitems.get_item(stack))
 		end,
 	})
 	minetest.register_node(":" .. name, def)
