@@ -1,10 +1,26 @@
 local S = minetest.get_translator()
 local F = minetest.formspec_escape
 
+local has_doc = minetest.get_modpath("doc_items")
+
 gtextitems = {}
 
 gtextitems.GROUP_BLANK = 1
 gtextitems.GROUP_WRITTEN = 2
+
+if has_doc then
+	doc.sub.items.register_factoid(nil, "use", function(itemstring, def)
+		local ret = {}
+		local g = minetest.get_item_group(itemstring, "gtextitem")
+		if g > 0 then
+			table.insert(ret, S"This item can be written in when used (punched with).")
+			if g == gtextitems.GROUP_WRITTEN then
+				table.insert(ret, S("It can be copied by crafting with another empty @1.", minetest.registered_nodes[def._gtextitems_def.itemname].description))
+			end
+		end
+		return table.concat(ret, "\n")
+	end)
+end
 
 function gtextitems.on_use(stack, player)
 	local playername = player:get_player_name()
