@@ -37,7 +37,7 @@ function gtextitems.on_use(stack, player)
 	.. "field_close_on_enter[title;false]"
 	.. ("textarea[0.1,1.2;7.8,6;text;%s;%s]"):format(F(S"Text:"), F(gtm.text))
 	.. "field_close_on_enter[text;false]"
-	.. ((minetest.get_item_group(stack:get_name(), "gtextitem") == gtextitems.GROUP_BLANK) and "" or ("label[0.1,7.5;%s]"):format(F(S("Last written by @1", gtm.author))))
+	.. ((minetest.get_item_group(stack:get_name(), "gtextitem") == gtextitems.GROUP_BLANK or #gtm.author == 0) and "" or ("label[0.1,7.5;%s]"):format(F(S("Last written by @1", gtm.author))))
 	.. ("button_exit[6.75,7.4;1,0.5;save;%s]"):format(F(S"Write"))
 
 	minetest.show_formspec(playername, "gtextitems:formspec", formspec)
@@ -74,7 +74,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 end)
 
 local default = {
-	author = "Unknown",
+	author = "",
 	title = "Untitled",
 	text = "",
 }
@@ -112,7 +112,8 @@ function gtextitems.set_node(pos, data)
 	meta:set_string("formspec", "size[8,8]"
 		.. "real_coordinates[true]"
 		.. ("label[0.1,0.35;%s]"):format(F(gtm.title))
-		.. ("textarea[0.1,1.2;7.8,6.7;;;%s]"):format(F(gtm.text))
+		.. ("textarea[0.1,1.2;7.8,6.2;;;%s]"):format(F(gtm.text))
+		.. ((#gtm.author == 0) and "" or ("label[0.1,7.5;%s]"):format(F(S("Last written by @1", gtm.author))))
 	)
 end
 
