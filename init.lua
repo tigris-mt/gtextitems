@@ -37,7 +37,8 @@ function gtextitems.on_use(stack, player)
 	.. "field_close_on_enter[title;false]"
 	.. ("textarea[0.1,1.2;7.8,6;text;%s;%s]"):format(F(S"Text:"), F(gtm.text))
 	.. "field_close_on_enter[text;false]"
-	.. ("button_exit[3.5,7.4;1,0.5;save;%s]"):format(F(S"Write"))
+	.. ((minetest.get_item_group(stack:get_name(), "gtextitem") == gtextitems.GROUP_BLANK) and "" or ("label[0.1,7.5;%s]"):format(F(S("Last written by @1", gtm.author))))
+	.. ("button_exit[6.75,7.4;1,0.5;save;%s]"):format(F(S"Write"))
 
 	minetest.show_formspec(playername, "gtextitems:formspec", formspec)
 	return stack
