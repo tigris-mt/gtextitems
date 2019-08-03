@@ -137,9 +137,27 @@ function gtextitems.register(name, def)
 
 		for i=1,craft_inv:get_size("craft") do
 			if old_grid[i]:get_name() == def.writtenname then
-				gtextitems.set_item(stack, gtextitems.get_item(old_grid[i]))
+				stack = gtextitems.set_item(stack, gtextitems.get_item(old_grid[i]))
 				craft_inv:set_stack("craft", i, old_grid[i])
+				break
 			end
 		end
+
+		return stack
+	end)
+
+	minetest.register_craft_predict(function(stack, player, old_grid, craft_inv)
+		if stack:get_name() ~= def.writtenname then
+			return
+		end
+
+		for i=1,craft_inv:get_size("craft") do
+			if old_grid[i]:get_name() == def.writtenname then
+				stack = gtextitems.set_item(stack, gtextitems.get_item(old_grid[i]))
+				break
+			end
+		end
+
+		return stack
 	end)
 end
