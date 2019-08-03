@@ -94,10 +94,43 @@ function gtextitems.get_item(stack)
 	return table.combine(default, (#d > 0) and minetest.deserialize(d) or {})
 end
 
+local function register_node(name, def)
+	local def = table.combine(def, {
+		preserve_metadata = function(pos, oldnode, oldmeta, drops)
+			for _,drop in ipairs(drops) do
+				if minetest.get_item_group(drop:get_name(), "gtextitem") == gtextitems.GROUP_WRITTEN then
+					drop:get_meta():set_string("gtextitem", oldmeta.gtextitem)
+					drop:get_meta():set_string("description", oldmeta.infotext)
+				end
+			end
+		end,
+
+		after_place_node = function(pos, _, stack)
+			-- Don't set any metadata if this is just a blank item.
+			if minetest.get_item_group(stack:get_name(), "gtextitem") == gtextitems.GROUP_BLANK then
+				return
+			end
+			local meta = minetest.get_meta(pos)
+
+			meta:set_string("gtextitem", stack:get_meta():get_string("gtextitem"))
+			meta:set_string("infotext", stack:get_meta():get_string("description"))
+
+			local gtm = gtextitems.get_item(stack)
+			meta:set_string("formspec", "size[8,8]"
+				.. "real_coordinates[true]"
+				.. ("label[0.1,0.35;%s]"):format(F(gtm.title))
+				.. ("textarea[0.1,1.2;7.8,6.7;;;%s]"):format(F(gtm.text))
+			)
+		end,
+	})
+	minetest.register_node(":" .. name, def)
+end
+
 function gtextitems.register(name, def)
 	def = table.combine({
 		itemname = name,
 		writtenname = name .. "_written",
+		node = false,
 	}, def, {
 		item = table.combine({
 			description = S"Writable Item",
@@ -121,8 +154,13 @@ function gtextitems.register(name, def)
 		gtextitem = gtextitems.GROUP_WRITTEN,
 	}, def.written.groups or {})
 
-	minetest.register_craftitem(def.itemname, def.item)
-	minetest.register_craftitem(def.writtenname, table.combine(def.item, def.written))
+	if def.node then
+		register_node(def.itemname, def.item)
+		register_node(def.writtenname, table.combine(def.item, def.written))
+	else
+		minetest.register_craftitem(":" .. def.itemname, def.item)
+		minetest.register_craftitem(":" .. def.writtenname, table.combine(def.item, def.written))
+	end
 
 	minetest.register_craft{
 		output = def.writtenname,
