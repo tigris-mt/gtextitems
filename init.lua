@@ -5,7 +5,10 @@ local has_doc = minetest.get_modpath("doc_items")
 
 gtextitems = {}
 
+-- gtextitem item group
+-- This item is blank (stackable, no metadata yet).
 gtextitems.GROUP_BLANK = 1
+-- This item is written (not stackable, has metadata).
 gtextitems.GROUP_WRITTEN = 2
 
 if has_doc then
@@ -22,6 +25,7 @@ if has_doc then
 	end)
 end
 
+-- When punching, display the formspec.
 function gtextitems.on_use(stack, player)
 	local playername = player:get_player_name()
 
@@ -37,6 +41,7 @@ function gtextitems.on_use(stack, player)
 	.. "field_close_on_enter[title;false]"
 	.. ("textarea[0.1,1.2;7.8,6;text;%s;%s]"):format(F(S"Text:"), F(gtm.text))
 	.. "field_close_on_enter[text;false]"
+	-- Only display the auther when it is set.
 	.. ((minetest.get_item_group(stack:get_name(), "gtextitem") == gtextitems.GROUP_BLANK or #gtm.author == 0) and "" or ("label[0.1,7.5;%s]"):format(F(S("Last written by @1", gtm.author))))
 	.. ("button_exit[6.75,7.4;1,0.5;save;%s]"):format(F(S"Write"))
 
@@ -53,11 +58,14 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		return
 	end
 
+	-- The wielded item will be the gtextitem.
 	local wielded = player:get_wielded_item()
+	-- Ensure it's a valid item.
 	if not gtextitems.get_item(wielded) then
 		return
 	end
 
+	-- Create a new stack of the written item.
 	local def = minetest.registered_items[wielded:get_name()]._gtextitems_def
 	local stack = ItemStack(def.writtenname)
 
@@ -67,24 +75,31 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		text = fields.text,
 	})
 
+	-- Take one item from wielded (if blank, then one from the stack, otherwise the whole written stack).
 	wielded:take_item(1)
 	player:set_wielded_item(wielded)
+
+	-- Add the edited item. If it was originally a written item or single item stack, this will simply replace the item removed from wielded earlier.
 	minetest.add_item(player:get_pos(), player:get_inventory():add_item("main", stack))
 	return true
 end)
 
+-- gtextitem data structure.
 local default = {
+	-- Who last modified this? If blank, then disregard. Should be multiple words if "written" by an NPC.
 	author = "",
 	title = "Untitled",
 	text = "",
 }
 
+-- Add data to a gtextitem and sets description.
 function gtextitems.set_item(stack, data)
 	stack:get_meta():set_string("gtextitem", minetest.serialize(data))
 	stack:get_meta():set_string("description", S("'@1' by @2", gtextitems.get_item(stack).title, gtextitems.get_item(stack).author))
 	return stack
 end
 
+-- Get a gtextitem's data. Returns nil if the item is not a gtextitem.
 function gtextitems.get_item(stack)
 	if minetest.get_item_group(stack:get_name(), "gtextitem") == 0 then
 		return nil
@@ -94,8 +109,11 @@ function gtextitems.get_item(stack)
 	return table.combine(default, (#d > 0) and minetest.deserialize(d) or {})
 end
 
+-- Sets a gtextitem written node's data.
 function gtextitems.set_node(pos, data)
 	local nn = minetest.get_node(pos).name
+
+	-- Only written nodes can be set.
 	if minetest.get_item_group(nn, "gtextitem") ~= gtextitems.GROUP_WRITTEN then
 		minetest.log("warning", ("Tried to gtextitems.set_node invalid node (%s) at (%s)."):format(nn, minetest.pos_to_string(pos)))
 		return
@@ -118,6 +136,7 @@ function gtextitems.set_node(pos, data)
 end
 
 local function register_node(name, def)
+	-- Override def with functions to save and load metadata when converting between item and node.
 	local def = table.combine(def, {
 		preserve_metadata = function(pos, oldnode, oldmeta, drops)
 			for _,drop in ipairs(drops) do
@@ -141,15 +160,20 @@ end
 
 function gtextitems.register(name, def)
 	def = table.combine({
+		-- Item names.
 		itemname = name,
 		writtenname = name .. "_written",
+
+		-- Register as a node?
 		node = false,
 	}, def, {
+		-- Base item override.
 		item = table.combine({
 			description = S"Writable Item",
 			on_use = gtextitems.on_use,
 		}, def.item or {}),
 
+		-- Additional written item overrides.
 		written = table.combine({
 			description = S"Written Item",
 			on_use = gtextitems.on_use,
@@ -175,17 +199,20 @@ function gtextitems.register(name, def)
 		minetest.register_craftitem(":" .. def.writtenname, table.combine(def.item, def.written))
 	end
 
+	-- Register shapeless copying recipe.
 	minetest.register_craft{
 		output = def.writtenname,
 		type = "shapeless",
 		recipe = {def.itemname, def.writtenname},
 	}
 
+	-- When copy-crafting, copy metadata and restore the old written item.
 	minetest.register_on_craft(function(stack, player, old_grid, craft_inv)
 		if stack:get_name() ~= def.writtenname then
 			return
 		end
 
+		-- Locate the item to copy.
 		for i=1,craft_inv:get_size("craft") do
 			if old_grid[i]:get_name() == def.writtenname then
 				stack = gtextitems.set_item(stack, gtextitems.get_item(old_grid[i]))
@@ -197,6 +224,7 @@ function gtextitems.register(name, def)
 		return stack
 	end)
 
+	-- Same as above, but for prediction. Don't restore the old written item.
 	minetest.register_craft_predict(function(stack, player, old_grid, craft_inv)
 		if stack:get_name() ~= def.writtenname then
 			return
