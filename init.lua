@@ -90,12 +90,17 @@ local default = {
 	author = "",
 	title = "Untitled",
 	text = "",
+
+	-- Was this produced by copying?
+	copy = false,
+	-- Unique ID. Preserved over copies, reset on editing.
+	id = nil,
 }
 
 -- Add data to a gtextitem and sets description.
 function gtextitems.set_item(stack, data)
 	stack:get_meta():set_string("gtextitem", minetest.serialize(data))
-	stack:get_meta():set_string("description", S("'@1' by @2", gtextitems.get_item(stack).title, gtextitems.get_item(stack).author))
+	stack:get_meta():set_string("description", S("'@1' by @2@3", gtextitems.get_item(stack).title, gtextitems.get_item(stack).author, data.copy and S" (Copy)" or ""))
 	return stack
 end
 
@@ -215,7 +220,7 @@ function gtextitems.register(name, def)
 		-- Locate the item to copy.
 		for i=1,craft_inv:get_size("craft") do
 			if old_grid[i]:get_name() == def.writtenname then
-				stack = gtextitems.set_item(stack, gtextitems.get_item(old_grid[i]))
+				stack = gtextitems.set_item(stack, table.combine(gtextitems.get_item(old_grid[i]), {copy = true}))
 				craft_inv:set_stack("craft", i, old_grid[i])
 				break
 			end
@@ -232,7 +237,7 @@ function gtextitems.register(name, def)
 
 		for i=1,craft_inv:get_size("craft") do
 			if old_grid[i]:get_name() == def.writtenname then
-				stack = gtextitems.set_item(stack, gtextitems.get_item(old_grid[i]))
+				stack = gtextitems.set_item(stack, table.combine(gtextitems.get_item(old_grid[i]), {copy = true}))
 				break
 			end
 		end
