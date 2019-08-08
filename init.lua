@@ -111,7 +111,7 @@ function gtextitems.get_item(stack)
 	end
 
 	local d = stack:get_meta():get_string("gtextitem")
-	return table.combine(default, (#d > 0) and minetest.deserialize(d) or {})
+	return b.t.combine(default, (#d > 0) and minetest.deserialize(d) or {})
 end
 
 -- Sets a gtextitem written node's data.
@@ -142,7 +142,7 @@ end
 
 local function register_node(name, def)
 	-- Override def with functions to save and load metadata when converting between item and node.
-	local def = table.combine(def, {
+	local def = b.t.combine(def, {
 		preserve_metadata = function(pos, oldnode, oldmeta, drops)
 			for _,drop in ipairs(drops) do
 				if minetest.get_item_group(drop:get_name(), "gtextitem") == gtextitems.GROUP_WRITTEN then
@@ -164,7 +164,7 @@ local function register_node(name, def)
 end
 
 function gtextitems.register(name, def)
-	def = table.combine({
+	def = b.t.combine({
 		-- Item names.
 		itemname = name,
 		writtenname = name .. "_written",
@@ -173,13 +173,13 @@ function gtextitems.register(name, def)
 		node = false,
 	}, def, {
 		-- Base item override.
-		item = table.combine({
+		item = b.t.combine({
 			description = S"Writable Item",
 			on_use = gtextitems.on_use,
 		}, def.item or {}),
 
 		-- Additional written item overrides.
-		written = table.combine({
+		written = b.t.combine({
 			description = S"Written Item",
 			on_use = gtextitems.on_use,
 			stack_max = 1,
@@ -188,20 +188,20 @@ function gtextitems.register(name, def)
 
 	def.item._gtextitems_def = def
 
-	def.item.groups = table.combine({
+	def.item.groups = b.t.combine({
 		gtextitem = gtextitems.GROUP_BLANK,
 	}, def.item.groups or {})
 
-	def.written.groups = table.combine(def.item.groups, {
+	def.written.groups = b.t.combine(def.item.groups, {
 		gtextitem = gtextitems.GROUP_WRITTEN,
 	}, def.written.groups or {})
 
 	if def.node then
 		register_node(def.itemname, def.item)
-		register_node(def.writtenname, table.combine(def.item, def.written))
+		register_node(def.writtenname, b.t.combine(def.item, def.written))
 	else
 		minetest.register_craftitem(":" .. def.itemname, def.item)
-		minetest.register_craftitem(":" .. def.writtenname, table.combine(def.item, def.written))
+		minetest.register_craftitem(":" .. def.writtenname, b.t.combine(def.item, def.written))
 	end
 
 	-- Register shapeless copying recipe.
@@ -220,7 +220,7 @@ function gtextitems.register(name, def)
 		-- Locate the item to copy.
 		for i=1,craft_inv:get_size("craft") do
 			if old_grid[i]:get_name() == def.writtenname then
-				stack = gtextitems.set_item(stack, table.combine(gtextitems.get_item(old_grid[i]), {copy = true}))
+				stack = gtextitems.set_item(stack, b.t.combine(gtextitems.get_item(old_grid[i]), {copy = true}))
 				craft_inv:set_stack("craft", i, old_grid[i])
 				break
 			end
@@ -237,7 +237,7 @@ function gtextitems.register(name, def)
 
 		for i=1,craft_inv:get_size("craft") do
 			if old_grid[i]:get_name() == def.writtenname then
-				stack = gtextitems.set_item(stack, table.combine(gtextitems.get_item(old_grid[i]), {copy = true}))
+				stack = gtextitems.set_item(stack, b.t.combine(gtextitems.get_item(old_grid[i]), {copy = true}))
 				break
 			end
 		end
