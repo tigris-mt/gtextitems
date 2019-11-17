@@ -71,6 +71,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 
 	stack = gtextitems.set_item(stack, {
 		author = player:get_player_name(),
+		author_type = "player",
 		title = fields.title,
 		text = fields.text,
 	})
@@ -86,8 +87,11 @@ end)
 
 -- gtextitem data structure.
 local default = {
-	-- Who last modified this? If blank, then disregard. Should be multiple words if "written" by an NPC.
+	-- Who last modified this? If blank, then disregard.
 	author = "",
+	-- What kind of thing modified this?
+	--- Should be "player" if the author is a player name.
+	author_type = "",
 	title = "Untitled",
 	text = "",
 
