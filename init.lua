@@ -144,6 +144,13 @@ function gtextitems.set_node(pos, data)
 	)
 end
 
+-- Get a gtextitem written node's data; returns nil if not a valid node or valid data
+function gtextitems.get_node(pos)
+	if minetest.get_item_group(minetest.get_node(pos).name, "gtextitem") == gtextitems.GROUP_WRITTEN then
+		return minetest.deserialize(minetest.get_meta(pos):get_string("gtextitem"))
+	end
+end
+
 local function register_node(name, def)
 	-- Override def with functions to save and load metadata when converting between item and node.
 	local def = b.t.combine(def, {
